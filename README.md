@@ -23,7 +23,7 @@ To run this program, you need:
 1. Clone the repository to your local machine.
 
 ```
-git clone https://github.com/your-username/anagram-checker.git
+git clone https://github.com/mrgoraya/anagram-checker.git
 ```
 
 2. Navigate to the project directory.
