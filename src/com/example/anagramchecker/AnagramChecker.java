@@ -1,110 +1,88 @@
 package com.example.anagramchecker;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.*;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Scanner;
 
 public class AnagramChecker {
-    static HashMap<String, List<String>> anagramMap = new HashMap<>();
-
+    static HashMap<String, Set<String>> anagramMap = new HashMap<>();
     public static void main(String[] args) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        Scanner scanner = new Scanner(System.in);
 
-        try {
-            System.out.print("How many texts do you want to compare? ");
-            int textCount = Integer.parseInt(reader.readLine());
+        do {
+            System.out.print("Enter the string: ");
+            String inputStr1 = scanner.nextLine();
 
-            if (textCount < 0) {
-                System.err.println("Please enter a non-negative integer for the number of texts.");
+            System.out.print("Enter the next string: ");
+            String inputStr2 = scanner.nextLine();
+
+
+            if (areAnagrams(inputStr1, inputStr2)) {
+                System.out.println("These strings are anagrams!");
+                precomputeAnagrams(inputStr1);
+                precomputeAnagrams(inputStr2);
             } else {
-                String[] texts = new String[textCount];
-
-                for (int i = 0; i < textCount; i++) {
-                    System.out.print("Enter text " + (char) ('A' + i) + ": ");
-                    texts[i] = reader.readLine();
-                }
-
-                // texts => ["abc","cba"] input
-                precomputeAnagrams(texts);
-
-                compareTexts(texts);
-
-                System.out.print("Enter a text to find its anagrams: ");
-                String searchText = reader.readLine();
-                List<String> anagrams = findAnagrams(searchText);
-                System.out.println("Anagrams of '" + searchText + "': " + anagrams);
-            }
-        } catch (NumberFormatException e) {
-            System.err.println("Invalid input. Please enter a valid integer.");
-        } catch (IOException e) {
-            System.err.println("An error occurred while reading user input.");
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException e) {
-                System.err.println("An error occurred while closing the input stream.");
-            }
-        }
-    }
-
-    static void precomputeAnagrams(String[] texts) {
-        for (String text : texts) {
-            String cleanText = text.replaceAll("[^a-zA-Z]", "").toLowerCase();
-            char[] textChars = cleanText.toCharArray();
-            Arrays.sort(textChars);
-            String sortedText = new String(textChars);
-
-            anagramMap.computeIfAbsent(sortedText, k -> new ArrayList<>()).add(text);
-        }
-    }
-
-    static void compareTexts(String[] texts) {
-        int textCount = texts.length;
-        Set<String> checkedAnagrams = new HashSet<>(); // To keep track of texts that are confirmed as anagrams
-
-        for (int i = 0; i < textCount - 1; i++) {
-            if (checkedAnagrams.contains(texts[i])) {
-                continue; // Skip texts that are already confirmed as anagrams
+                System.out.println("These strings are not anagrams!");
             }
 
-            for (int j = i + 1; j < textCount; j++) {
-                String text1 = texts[i];
-                String text2 = texts[j];
-
-                boolean result = areAnagrams(text1, text2);
-                System.out.println("Are '" + text1 + "' and '" + text2 + "' anagrams? " + result);
-
-                if (result) {
-                    checkedAnagrams.add(text1);
-                    checkedAnagrams.add(text2);
+            while (true) {
+                System.out.print("Do you want to check more anagrams? (yes/no): ");
+                String choice = scanner.nextLine().toLowerCase();
+                try {
+                    if ("yes".equals(choice)) {
+                        break;
+                    } else if ("no".equals(choice)) {
+                        System.out.print("Enter a text to find its anagrams: ");
+                        String searchTextInput = scanner.nextLine();
+                        List<String> anagrams = searchForAnagrams(searchTextInput);
+                        System.out.println("Anagrams of '" + searchTextInput + "': " + anagrams);
+                        System.out.println("Goodbye!");
+                        scanner.close();
+                        return;
+                    } else {
+                        throw new IllegalArgumentException("Invalid input. Please enter 'yes' or 'no'.");
+                    }
+                } catch (IllegalArgumentException e) {
+                    System.out.println("An error occurred: " + e.getMessage());
                 }
             }
+        } while (true);
+    }
+
+    public static void precomputeAnagrams(String inputStr) {
+        String cleanedStr = sanitizeInput(inputStr);
+        String sortedStr = sortString(cleanedStr);
+        anagramMap.computeIfAbsent(sortedStr, k -> new HashSet<>()).add(inputStr);
+    }
+
+    public static boolean areAnagrams(String inputStr1, String inputStr2) {
+        String cleanedStr1 = sanitizeInput(inputStr1);
+        String cleanedStr2 = sanitizeInput(inputStr2);
+
+        return sortString(cleanedStr1).equals(sortString(cleanedStr2));
+    }
+
+    public static String sortString(String input) {
+        char[] charArray = input.toCharArray();
+        Arrays.sort(charArray);
+        return new String(charArray);
+    }
+
+    public static String sanitizeInput(String input) {
+        // Remove special characters and convert to lowercase
+        String sanitizedInput = input.replaceAll("[^a-zA-Z]", "").toLowerCase();
+        if (sanitizedInput.isEmpty()) {
+            throw new IllegalArgumentException("Invalid input. Please enter a valid string.");
         }
+        return sanitizedInput;
     }
 
-
-    public static boolean areAnagrams(String str1, String str2) {
-        String cleanStr1 = str1.replaceAll("[^a-zA-Z]", "").toLowerCase();
-        String cleanStr2 = str2.replaceAll("[^a-zA-Z]", "").toLowerCase();
-
-        char[] chars1 = cleanStr1.toCharArray();
-        char[] chars2 = cleanStr2.toCharArray();
-
-        Arrays.sort(chars1);
-        Arrays.sort(chars2);
-
-        return Arrays.equals(chars1, chars2);
-    }
-
-    public static List<String> findAnagrams(String searchText) {
-        searchText = searchText.replaceAll("[^a-zA-Z]", "").toLowerCase();
-        char[] searchChars = searchText.toCharArray();
-        Arrays.sort(searchChars);
-        String sortedText = new String(searchChars);
-
-        List<String> anagrams = anagramMap.getOrDefault(sortedText, new ArrayList<>());
-        anagrams.remove(searchText);
-        return anagrams;
+    public static List<String> searchForAnagrams(String searchTextInput) {
+        String searchText = sortString(sanitizeInput(searchTextInput));
+        Set<String> anagrams = anagramMap.getOrDefault(searchText, new HashSet<>());
+        anagrams.remove(searchTextInput);
+        return new ArrayList<>(anagrams);
     }
 }
